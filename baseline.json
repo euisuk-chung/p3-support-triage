@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "accuracy": {
+    "case-01-mixed": 1.0,
+    "case-02-unknown-category": 1.0
+  }
+}

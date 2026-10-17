@@ -1,0 +1,63 @@
+# 문의 분류의 흐름도 — "허용된 경로" 의 전부다. 여기 없는 길로는 가지 못한다.
+#
+# 단계 이름은 업무 말: 수집(collect) → 작성(draft) → 검수(review) → 전달(deliver).
+# 요청(request)은 흐름 밖의 scripts/request.sh 가 만든다 — inbox/ 에 문의 파일이 생기면.
+#
+# 승인(approve)은 따로 단계가 없다. 전달(deliver.py)이 확신을 보고 문의마다 가른다.
+#   확신이 기준선 이상    → 팀 큐(담당 팀)
+#   확신이 기준선 아래    → 사람 큐(human-review) — 이것이 이 프로젝트의 승인이다. 사람이 카드를 보고 정한다
+# 사람 큐로 가는 것은 실패가 아니다. 하나라도 사람 큐로 가면 끝 상태는 escalated(신호 3)이고, 정상 종료다.
+#
+# 누가 하나(by)
+#   script   차단 장치 next_step.py · run_review.py 가 그 명령을 직접 실행한다. 모델을 부르지 않는다
+#   drafter  Claude 가 하위 에이전트 drafter 에게 맡긴다. 여기서만 모델이 일한다
+#
+# 다음에 어디로 갈지는 단계가 끝날 때 남기는 신호(숫자)가 정한다. 출력 글을 읽어 판단하지 않는다.
+#   0 됐다 / 1 검수가 거부 / 2 형식 위반 / 3 사람 차례(사람 큐로 간 것이 있다) / 64 실행 환경 문제
+#
+# 키를 `on:` 이라고 쓰지 않는다 — YAML 에서 on 은 true 로 읽힌다. 그래서 next: 다.
+
+start: collect
+
+steps:
+  collect:
+    by: script
+    run: uv run python scripts/collect.py {id}
+    next:
+      0: draft
+      64: failed
+
+  draft:
+    by: drafter
+    ask: "요청 {id} 의 문의를 분류하게 하세요. 읽을 것 requests/{id}/tickets.json 과 requests/{id}/brief.json, 쓸 곳 requests/{id}/draft.json."
+    retry_hint: "목록 밖 카테고리가 거부됐으면 그 문의만 목록 안의 가장 가까운 이름으로 바꾸고 확신을 기준선 아래로 두세요(작성 담당 파일의 예외). 근거는 문의 원문에서 그대로 옮기고, 애매하면 확신을 낮게 — 사람 큐로 가는 것이 맞는 결과입니다."
+    max_visits: 3
+    when_exhausted: needs_human
+    next:
+      0: review
+
+  review:
+    by: script
+    # R1~R3 — 형식·카테고리 유효성·근거. 정답표를 쓰지 않는다(운영에서도 도는 검사).
+    run: uv run python review.py --request {id}
+    next:
+      0: deliver
+      1: draft
+      2: failed
+
+  deliver:
+    by: script
+    # 큐에 넣기. 덮어쓰기라 두 번 해도 같다(queues.py). 둘 다 정상 종료다.
+    run: uv run python scripts/deliver.py {id}
+    next:
+      0: routed       # 전부 팀 큐로
+      3: escalated    # 일부가 사람 큐로 — 정상
+      64: failed
+
+terminal:
+  - routed
+  - escalated
+  - needs_human
+  - failed
+
+max_steps: 12

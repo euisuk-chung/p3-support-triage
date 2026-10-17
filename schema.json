@@ -1,0 +1,35 @@
+{
+  "title": "ticket classification",
+  "description": "문의 하나에 분류 하나. 확신도는 모델이 스스로 매긴다 — 그걸 그대로 믿지 않는 것이 이 프로젝트의 주제다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classifications"],
+  "properties": {
+    "classifications": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ticket_id", "category", "confidence", "evidence"],
+        "properties": {
+          "ticket_id": { "type": "string", "minLength": 1 },
+          "category": { "type": "string", "minLength": 1 },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "모델이 매긴 확신도. 보정된 확률이 아니다."
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 300,
+            "description": "그렇게 판단한 근거. **티켓 본문에 그대로 있는 구절**이어야 한다."
+          }
+        }
+      }
+    }
+  }
+}

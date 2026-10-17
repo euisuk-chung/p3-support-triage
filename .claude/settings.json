@@ -4,10 +4,13 @@
     "deny": [
       "Bash(curl:*)",
       "Bash(wget:*)",
-      "Bash(gh pr merge:*)",
-      "Bash(git push origin main:*)",
+      "Bash(python3 scripts/deliver.py:*)",
       "Edit(cases/**)",
-      "Edit(requests/*/sources/**)",
+      "Edit(inbox/**)",
+      "Edit(assignments/**)",
+      "Edit(requests/*/tickets.json)",
+      "Read(cases/**)",
+      "Bash(uv run python scripts/deliver.py:*)",
       "Skill(drafter-rules)"
     ]
   },

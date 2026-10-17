@@ -21,9 +21,9 @@ CI 가 해시로 대조해야 한다. 이 훅은 거기까지 하지 않는다.
 학생이 대화형으로 Claude Code 를 쓰다가 **자료 원문을 고치는 흔한 실수**를 잡는다.
 그게 왜 위험한지가 이 프로젝트의 주제와 직접 닿는다.
 
-    인용 검사(G3)는 quote 가 cases/sources/ 원문에 그대로 있는지 본다.
-    원문을 고칠 수 있으면 **지어낸 문장을 원문에 써 넣고** 통과할 수 있다.
-    baseline.json 도 같다 — 기준을 낮추면 회귀가 사라진다.
+    근거 검사(R3)는 evidence 가 cases/tickets/ 의 본문에 그대로 있는지 본다.
+    본문을 고칠 수 있으면 **지어낸 근거를 본문에 써 넣고** 통과할 수 있다.
+    **정답표(cases/*.yaml 의 labels)도 같다** — 답을 모델 출력에 맞추면 정확도가 거짓말이 된다.
 
 > **검사를 세우면 그 검사를 피하는 길이 생긴다.** 여기서는 그 길이 채점표를 고치는 것이다.
 
@@ -42,16 +42,13 @@ from pathlib import Path, PurePosixPath
 
 # 에이전트가 고치면 안 되는 것. **경로 경계 단위로** 본다.
 PROTECTED_DIRS = {
-    "cases/sources": "자료 원문. 여기를 고칠 수 있으면 인용 검사(G3)가 무의미해진다",
+    "cases/tickets": "문의 원문. 여기를 고칠 수 있으면 근거 검사(R3)가 무의미해진다",
     "samples/reference": "회귀 비교의 고정 입력. 바꾸면 어제와 비교할 수 없다",
+    "assignments": "라우팅 결과(티켓당 파일 하나). 실습 중에 손으로 고치면 무엇이 자동인지 흐려진다",
     ".claude": "차단 장치 자신. 여기를 고칠 수 있으면 나머지 보호가 전부 무의미하다",
-    # 12차시에 더한 한 줄 — 작성 담당이 늘 지킬 규칙(스킬). 7차시에 Claude 와 지은 뒤 여기서 잠근다.
-    ".claude/skills": "작성 담당이 늘 따를 지시. 여기를 고칠 수 있으면 대화 창의 AI 가 그 지시를 스스로 바꿀 수 있다",
 }
-BUILDABLE = {"commands", "agents", "skills"}   # .claude/ 안에서 막지 않는 하위 폴더
-
 PROTECTED_FILES = {
-    "baseline.json": "회귀 기준. 여기를 낮추면 하락이 사라진다",
+    "baseline.json": "회귀 기준. 여기를 낮추면 하락이 사라진다 — score.py --fail-on-regression 이 이걸로 본다",
 }
 
 # 파일을 쓰는 도구들. Notebook 은 **경로 필드 이름이 다르다.**
@@ -59,7 +56,7 @@ WRITERS = {"Write", "Edit", "NotebookEdit"}
 PATH_FIELDS = ("file_path", "notebook_path", "path")
 
 # 셸로도 파일을 고칠 수 있다. 완전히 막지는 못하지만 흔한 형태는 잡는다.
-SHELL_TOOLS = {"Bash"}  # Windows 셸 명령도 Claude Code의 Bash 도구 이벤트로 들어온다.
+SHELL_TOOLS = {"Bash"}  # 셸 종류와 Claude Code 도구 이름을 혼동하지 않는다.
 
 # 지우거나 옮기는 명령. **맨 이름**을 대상으로 볼지 여기서 가른다.
 #
@@ -95,11 +92,6 @@ def protected(target: str) -> str | None:
             #    `rm -rf claims/` 처럼 **통째로 지우는 것**이 빠져나갔다.
             #    안의 파일 하나보다 디렉터리째가 더 나쁜데 그쪽이 안 막혔다.
             if fragment in PROTECTED_DIRS and i + depth <= len(parts):
-                # .claude/ 안에서 명령·에이전트·스킬 파일은 이 과정에서 Claude 가 짓는 대상이라 여기서는 넘긴다.
-                # 지키는 것은 설정(settings.json)과 차단 장치 코드(hooks/) — 이것을 고치면 나머지 보호가 무의미해진다.
-                # 다 지은 스킬은 위 목록에 ".claude/skills" 한 줄을 더해 잠근다(12차시) — 다음 바퀴(두 조각 깊이)에서 막힌다.
-                if fragment == ".claude" and i + 1 < len(parts) and parts[i + 1] in BUILDABLE:
-                    continue
                 return PROTECTED_DIRS[fragment]
     if parts and parts[-1] in PROTECTED_FILES:
         return PROTECTED_FILES[parts[-1]]

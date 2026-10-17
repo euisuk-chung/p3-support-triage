@@ -1,0 +1,29 @@
+{
+  "_note": "표본 결과물. 배선 확인용 고정 입력이다.",
+  "classifications": [
+    {
+      "ticket_id": "T-1041",
+      "category": "billing",
+      "confidence": 0.95,
+      "evidence": "카드 명세서에 같은 금액이 두 번 찍혔습니다"
+    },
+    {
+      "ticket_id": "T-1042",
+      "category": "account",
+      "confidence": 0.92,
+      "evidence": "비밀번호를 정확히 입력해도 계속 자격 증명이 올바르지 않다고 나옵니다"
+    },
+    {
+      "ticket_id": "T-1043",
+      "category": "bug",
+      "confidence": 0.88,
+      "evidence": "CSV 로 내려받아 엑셀에서 열면 한글이 전부 깨져서 보입니다"
+    },
+    {
+      "ticket_id": "T-1044",
+      "category": "howto",
+      "confidence": 0.35,
+      "evidence": "그냥 좀 봐주세요. 잘 모르겠어요."
+    }
+  ]
+}

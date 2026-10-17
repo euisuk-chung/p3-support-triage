@@ -1,0 +1,37 @@
+# 네 가지 문의. 셋은 명확하고 하나는 애매하다.
+#
+# ⚠️ 정답 라벨(`labels`)은 **오프라인 평가에서만** 쓴다.
+#    운영에는 정답이 없다 — 그게 이 프로젝트의 논점이다.
+
+# T-1044 는 사람이 봐도 애매하다. 확신이 낮게 나와 사람 큐로 가는 것이 **정상**이다.
+# 그래서 routed 가 아니라 escalated 다 — 이걸 routed 로 적으면
+# "애매한 것도 자동으로 나가야 한다"고 말하는 셈이 된다.
+expect: escalated       # routed | escalated | needs_human | failed — **graph.yaml 의 terminal 과 같은 어휘**
+
+tickets: tickets/2026-08-31.json
+
+# 쓸 수 있는 카테고리. **여기 없는 걸 쓰면 검사가 막는다.**
+categories:
+  - billing
+  - account
+  - bug
+  - howto
+
+# 확신이 이보다 낮으면 사람 큐로 보낸다.
+confidence_threshold: 0.8
+
+# ⚠️ **오프라인 전용이다.** `score.py` 만 이걸 본다.
+#    흐름(review·deliver)은 정확도를 보지 않는다 — 운영에 정답표가 없으니 볼 수가 없다.
+#    초판 주석은 "이보다 낮으면 내보내지 않는다" 였는데, 흐름이 그러지 않는다.
+accuracy_threshold: 0.75
+
+# ⚠️ 오프라인 전용. 운영 입력에는 이게 없다.
+labels:
+  T-1041: billing
+  T-1042: account
+  T-1043: bug
+  T-1044: howto      # 사람이 봐도 애매하다. 모델도 확신이 낮아야 정상이다
+
+# 사람 큐로 가야 마땅한 것. 확신도 설계가 맞는지 본다.
+expect_escalated:
+  - T-1044
